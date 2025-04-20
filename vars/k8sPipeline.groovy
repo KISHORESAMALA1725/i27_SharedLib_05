@@ -2,7 +2,7 @@ import com.i27academy.builds.Docker;
 import com.i27academy.k8s.k8s;
 
 def call(Map pipelineParams) {
-    Docker docker = new Docker(this)
+    // Docker docker = new Docker(this)
     k8s k8s = new k8s(this)  
         pipeline {
         agent {
