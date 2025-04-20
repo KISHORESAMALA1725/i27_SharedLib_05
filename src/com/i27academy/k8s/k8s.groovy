@@ -11,7 +11,7 @@ class K8s {
             echo "Entering K8S authentication/login methods"
             gcloud compute instances list
             echo "Create config file for env"
-            gcloud container clusters get-credentials i27-${clusterName}} --${zone} us-central1-c --project ${projectID}
+            gcloud container clusters get-credentials i27-${clusterName} --${zone} us-central1-c --project ${projectID}
         """
     }
 }
