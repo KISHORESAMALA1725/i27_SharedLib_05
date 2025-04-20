@@ -33,6 +33,7 @@ def call(Map pipelineParams) {
             PROD_HOST_PORT = "${pipelineParams.prodHostPort}"
             CONT_PORT = "${pipelineParams.contPort}"
 
+            // READ-POMfile METHOD
             POM_VERSION = readMavenPom().getVersion()
             POM_PACKAGING = readMavenPom().getPackaging()
 
@@ -45,6 +46,18 @@ def call(Map pipelineParams) {
             DEV_CLUSTER_NAME = "i27-cluster"
             DEV_CLUSTER_ZONE = "us-central1-c"
             DEV_PROJECT_ID = "shanwika-456212"
+
+            //K8S YAML_FILES
+            K8S_DEV_FILE = 'k8s_dev.yaml'
+            K8S_TEST_FILE = 'k8s_test.yaml'
+            K8S_STAGE_FILE = 'k8s_stage.yaml'
+            K8S_PROD_FILE =  'k8s_prod.yaml'
+
+            //K8S NAMESPACES 
+            DEV_NAMESPACE = 'cart_dev_ns'
+            TEST_NAMESPACE = 'cart_test_ns'
+            STAGE_NAMESPACE = 'cart_stage_ns'
+            PROD_NAMESPACE = 'cart_prod_ns'
         }
 
         stages {
