@@ -4,7 +4,7 @@ class k8s {
     def jenkins
     k8s(jenkins) {
         this.jenkins = jenkins      
-    }
+    }hju78
 
     def auth_login(clusterName, zone, projectID) {
         jenkins.sh """
