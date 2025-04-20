@@ -4,197 +4,197 @@ import com.i27academy.k8s.k8s;
 def call(Map pipelineParams) {
     Docker docker = new Docker(this)
     k8s k8s = new k8s(this)  
-            pipeline {
-            agent {
-                label 'k8s-slave'
-            }
+        pipeline {
+        agent {
+            label 'k8s-slave'
+        }
 
-            tools {
-                maven 'maven-3.8.8'
-                jdk 'jdk-17'
-            }
+        tools {
+            maven 'maven-3.8.8'
+            jdk 'jdk-17'
+        }
 
-            parameters {
-                choice(name: 'buildOnly', choices: 'no\nyes', description: 'Will do BUILD-ONLY')
-                choice(name: 'scanOnly', choices: 'no\nyes', description: 'Will perform SCAN-ONLY')
-                choice(name: 'dockerBuildAndPush', choices: 'no\nyes', description: 'Docker build and push')
-                choice(name: 'deploytodev', choices: 'no\nyes', description: 'Deploying to Dev')
-                choice(name: 'deploytotest', choices: 'no\nyes', description: 'Deploying to Test')
-                choice(name: 'deploytostage', choices: 'no\nyes', description: 'Deploying to Stage')
-                choice(name: 'deploytoprod', choices: 'no\nyes', description: 'Deploying to Prod')        
-            }
+        parameters {
+            choice(name: 'buildOnly', choices: 'no\nyes', description: 'Will do BUILD-ONLY')
+            choice(name: 'scanOnly', choices: 'no\nyes', description: 'Will perform SCAN-ONLY')
+            choice(name: 'dockerBuildAndPush', choices: 'no\nyes', description: 'Docker build and push')
+            choice(name: 'deploytodev', choices: 'no\nyes', description: 'Deploying to Dev')
+            choice(name: 'deploytotest', choices: 'no\nyes', description: 'Deploying to Test')
+            choice(name: 'deploytostage', choices: 'no\nyes', description: 'Deploying to Stage')
+            choice(name: 'deploytoprod', choices: 'no\nyes', description: 'Deploying to Prod')        
+        }
 
-            environment {
-                APPLICATION_NAME = "${pipelineParams.appName}"
-                // DOCKER DEPLOYMENT
-                DEV_HOST_PORT = "${pipelineParams.devHostPort}"
-                TEST_HOST_PORT = "${pipelineParams.testHostPort}"
-                STAGE_HOST_PORT = "${pipelineParams.stageHostPort}"
-                PROD_HOST_PORT = "${pipelineParams.prodHostPort}"
-                CONT_PORT = "${pipelineParams.contPort}"
+        environment {
+            APPLICATION_NAME = "${pipelineParams.appName}"
+            // DOCKER DEPLOYMENT
+            DEV_HOST_PORT = "${pipelineParams.devHostPort}"
+            TEST_HOST_PORT = "${pipelineParams.testHostPort}"
+            STAGE_HOST_PORT = "${pipelineParams.stageHostPort}"
+            PROD_HOST_PORT = "${pipelineParams.prodHostPort}"
+            CONT_PORT = "${pipelineParams.contPort}"
 
-                POM_VERSION = readMavenPom().getVersion()
-                POM_PACKAGING = readMavenPom().getPackaging()
+            POM_VERSION = readMavenPom().getVersion()
+            POM_PACKAGING = readMavenPom().getPackaging()
 
-                //DOCKER VM INFO
-                DOCKER_HUB = "docker.io/kishoresamala84"
-                DOCKER_CREDS = credentials('kishoresamala84_docker_creds')
-                DOCKER_VM = '34.21.68.255'
+            //DOCKER VM INFO
+            DOCKER_HUB = "docker.io/kishoresamala84"
+            DOCKER_CREDS = credentials('kishoresamala84_docker_creds')
+            DOCKER_VM = '34.21.68.255'
 
-                //K8S DETAILS
-                DEV_CLUSTER_NAME = "i27-cluster"
-                DEV_CLUSTER_ZONE = "us-central1-a"
-                DEV_PROJECT_ID = "shanwika-456212"
-            }
+            //K8S DETAILS
+            DEV_CLUSTER_NAME = "i27-cluster"
+            DEV_CLUSTER_ZONE = "us-central1-a"
+            DEV_PROJECT_ID = "shanwika-456212"
+        }
 
-            stages {
-                stage ('BUILD_STAGE') {
-                    when {
-                        anyOf {
-                            expression {
-                                params.scanOnly == 'yes'
-                                params.buildOnly =='yes'
-                            }
-                        }
-                    }            
-                    steps {
-                        script{
-                            docker.buildApp("${env.APPLICATION_NAME}")
+        stages {
+            stage ('BUILD_STAGE') {
+                when {
+                    anyOf {
+                        expression {
+                            params.scanOnly == 'yes'
+                            params.buildOnly =='yes'
                         }
                     }
-                }        
-
-                stage ('SONARQUBE_STAGE') {
-                    when {
-                        anyOf {
-                            expression {
-                                params.scanOnly == 'yes'
-                                params.buildOnly =='yes'
-                            }
-                        }
-                    } 
-                    steps {
-                        echo "****************** Starting Sonar Scans with Quality Gates ******************"
-                        withSonarQubeEnv('sonarqube'){
-                            script {
-                                sh """
-                                mvn sonar:sonar \
-                                -Dsonar.projectKey=i27-"${env.APPLICATION_NAME}"-05 \
-                                -Dsonar.host.url=http://35.188.226.250:9000 \
-                                -Dsonar.login=sqa_7d01297a6e4c6d1d7f64e2f1137dcbc2df213ec4    
-                                """                    
-                            }
-                        }
-                        timeout (time: 2, unit: "MINUTES" ) {
-                            waitForQualityGate abortPipeline: true
-                        }                
+                }            
+                steps {
+                    script{
+                        docker.buildApp("${env.APPLICATION_NAME}")
                     }
                 }
+            }        
 
-                stage ('BUILD_FORMAT_STAGE') {
-                    steps {
+            stage ('SONARQUBE_STAGE') {
+                when {
+                    anyOf {
+                        expression {
+                            params.scanOnly == 'yes'
+                            params.buildOnly =='yes'
+                        }
+                    }
+                } 
+                steps {
+                    echo "****************** Starting Sonar Scans with Quality Gates ******************"
+                    withSonarQubeEnv('sonarqube'){
                         script {
                             sh """
-                            echo "Source JAR_FORMAT i27-${env.APPLICATION_NAME}-${env.POM_VERSION}.${env.POM_PACKAGING}"
-                            echo "Target JAR_FORMAT i27-${env.APPLICATION_NAME}-${BRANCH_NAME}-${currentBuild.number}.${env.POM_PACKAGING}"
-                            """
+                            mvn sonar:sonar \
+                            -Dsonar.projectKey=i27-"${env.APPLICATION_NAME}"-05 \
+                            -Dsonar.host.url=http://35.188.226.250:9000 \
+                            -Dsonar.login=sqa_7d01297a6e4c6d1d7f64e2f1137dcbc2df213ec4    
+                            """                    
                         }
                     }
+                    timeout (time: 2, unit: "MINUTES" ) {
+                        waitForQualityGate abortPipeline: true
+                    }                
                 }
+            }
 
-                stage ('DOCKER_BUILD_AND_PUSH') {
-                    when {
-                        expression {
-                            params.dockerBuildAndPush == 'yes'
-                        }
-                    }
-                    steps {
-                        script {
-                            dockerBuildAndPush().call()                    
-                        }
-                    }
-                }
-
-                stage ('DEPLOY_TO_DEV') {
-                    when {
-                        expression {
-                            params.deploytodev == 'yes'
-                        }
-                    }
-                    steps {
-                        script {
-                            imageValidation().call()
-                            k8s.auth_login("${env.DEV_CLUSTER_NAME}","${env.DEV_CLUSTER_ZONE}","${env.DEV_PROJECT_ID}")
-                            // dockerDeploy('dev', "${env.DEV_HOST_PORT}", "${env.CONT_PORT}").call()
-                        }
-                    }
-                }
-
-                stage ('DEPLOY_TO_TEST') {
-                    when {
-                        expression {
-                            params.deploytotest == 'yes'
-                        }
-                    }
-                    steps {
-                        script {
-                            imageValidation().call()
-                            dockerDeploy('test', "${env.TEST_HOST_PORT}", "${env.CONT_PORT}").call()
-                        }
-                    }
-                }
-
-                stage ('DEPLOY_TO_STAGE') {
-                    when {
-                        expression {
-                            params.deploytostage == 'yes'
-                        }
-                    }
-                    steps {
-                        script {
-                            imageValidation().call()
-                            dockerDeploy('stage', "${env.STAGE_HOST_PORT}", "${env.CONT_PORT}").call()
-                        }
-                    }
-                }
-
-                stage ('DEPLOY_TO_PROD') {
-                    when {
-                        expression {
-                            params.deploytoprod == 'yes'
-                        }
-                    }
-                    steps {
-                        script {
-                            imageValidation().call()
-                            dockerDeploy('prod', "${env.PROD_HOST_PORT}", "${env.CONT_PORT}").call()
-                        }
+            stage ('BUILD_FORMAT_STAGE') {
+                steps {
+                    script {
+                        sh """
+                        echo "Source JAR_FORMAT i27-${env.APPLICATION_NAME}-${env.POM_VERSION}.${env.POM_PACKAGING}"
+                        echo "Target JAR_FORMAT i27-${env.APPLICATION_NAME}-${BRANCH_NAME}-${currentBuild.number}.${env.POM_PACKAGING}"
+                        """
                     }
                 }
             }
 
-            post {
-                success{
-                    script{                
-                        def subject = "Success !!! Job is:=> [${env.JOB_NAME}] <<>> Build # is :=> [${env.BUILD_NUMBER}] <<>> status is :=> [${currentBuild.currentResult}]"
-                        def body =  "Build Number:=> ${env.BUILD_NUMBER} \n\n" +
-                                "status:=> ${currentBuild.currentResult} \n\n" +
-                                "Job URL:=> ${env.BUILD_URL}"
-                        sendEmailNotification('kishorecloud.1725@gmail.com', subject, body)               
-                    }            
+            stage ('DOCKER_BUILD_AND_PUSH') {
+                when {
+                    expression {
+                        params.dockerBuildAndPush == 'yes'
+                    }
                 }
+                steps {
+                    script {
+                        dockerBuildAndPush().call()                    
+                    }
+                }
+            }
 
-                failure{
-                    script{                
-                        def subject = "failure <<>> Job is:=> [${env.JOB_NAME}] <<>> Build # is :=> [${env.BUILD_NUMBER}] <<>> status is :=> [${currentBuild.currentResult}]"
-                        def body =  "Build Number:=> ${env.BUILD_NUMBER} \n\n" +
-                                "status:=> ${currentBuild.currentResult} \n\n" +
-                                "Job URL:=> ${env.BUILD_URL}"
-                        sendEmailNotification('kishorecloud.1725@gmail.com', subject, body)               
-                    }              
+            stage ('DEPLOY_TO_DEV') {
+                when {
+                    expression {
+                        params.deploytodev == 'yes'
+                    }
                 }
-            }    
-        }   
+                steps {
+                    script {
+                        imageValidation().call()
+                        k8s.auth_login("${env.DEV_CLUSTER_NAME}","${env.DEV_CLUSTER_ZONE}","${env.DEV_PROJECT_ID}")
+                        // dockerDeploy('dev', "${env.DEV_HOST_PORT}", "${env.CONT_PORT}").call()
+                    }
+                }
+            }
+
+            stage ('DEPLOY_TO_TEST') {
+                when {
+                    expression {
+                        params.deploytotest == 'yes'
+                    }
+                }
+                steps {
+                    script {
+                        imageValidation().call()
+                        dockerDeploy('test', "${env.TEST_HOST_PORT}", "${env.CONT_PORT}").call()
+                    }
+                }
+            }
+
+            stage ('DEPLOY_TO_STAGE') {
+                when {
+                    expression {
+                        params.deploytostage == 'yes'
+                    }
+                }
+                steps {
+                    script {
+                        imageValidation().call()
+                        dockerDeploy('stage', "${env.STAGE_HOST_PORT}", "${env.CONT_PORT}").call()
+                    }
+                }
+            }
+
+            stage ('DEPLOY_TO_PROD') {
+                when {
+                    expression {
+                        params.deploytoprod == 'yes'
+                    }
+                }
+                steps {
+                    script {
+                        imageValidation().call()
+                        dockerDeploy('prod', "${env.PROD_HOST_PORT}", "${env.CONT_PORT}").call()
+                    }
+                }
+            }
+        }
+
+        post {
+            success{
+                script{                
+                    def subject = "Success !!! Job is:=> [${env.JOB_NAME}] <<>> Build # is :=> [${env.BUILD_NUMBER}] <<>> status is :=> [${currentBuild.currentResult}]"
+                    def body =  "Build Number:=> ${env.BUILD_NUMBER} \n\n" +
+                            "status:=> ${currentBuild.currentResult} \n\n" +
+                            "Job URL:=> ${env.BUILD_URL}"
+                    sendEmailNotification('kishorecloud.1725@gmail.com', subject, body)               
+                }            
+            }
+
+            failure{
+                script{                
+                    def subject = "failure <<>> Job is:=> [${env.JOB_NAME}] <<>> Build # is :=> [${env.BUILD_NUMBER}] <<>> status is :=> [${currentBuild.currentResult}]"
+                    def body =  "Build Number:=> ${env.BUILD_NUMBER} \n\n" +
+                            "status:=> ${currentBuild.currentResult} \n\n" +
+                            "Job URL:=> ${env.BUILD_URL}"
+                    sendEmailNotification('kishorecloud.1725@gmail.com', subject, body)               
+                }              
+            }
+        }    
+    }   
 
 }
 
