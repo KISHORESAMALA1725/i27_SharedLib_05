@@ -1,3 +1,4 @@
+import com.i27academy.builds.Docker;
 import com.i27academy.k8s.k8s;
 
 def call(Map pipelineParams) {
