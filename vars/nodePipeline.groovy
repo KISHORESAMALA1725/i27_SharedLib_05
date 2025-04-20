@@ -34,8 +34,8 @@ def call(Map pipelineParams) {
             CONT_PORT = "${pipelineParams.contPort}"
 
             // READ-POMfile METHOD
-            POM_VERSION = readMavenPom().getVersion()
-            POM_PACKAGING = readMavenPom().getPackaging()
+            // POM_VERSION = readMavenPom().getVersion()
+            // POM_PACKAGING = readMavenPom().getPackaging()
 
             //DOCKER VM INFO
             DOCKER_HUB = "docker.io/kishoresamala84"
