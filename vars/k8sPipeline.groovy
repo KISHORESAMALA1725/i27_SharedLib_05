@@ -43,7 +43,7 @@ def call(Map pipelineParams) {
 
             //K8S DETAILS
             DEV_CLUSTER_NAME = "i27-cluster"
-            DEV_CLUSTER_ZONE = "us-central1-a"
+            DEV_CLUSTER_ZONE = "us-central1-c"
             DEV_PROJECT_ID = "shanwika-456212"
         }
 
