@@ -54,10 +54,10 @@ def call(Map pipelineParams) {
             K8S_PROD_FILE =  'k8s_prod.yaml'
 
             //K8S NAMESPACES 
-            DEV_NAMESPACE = 'cart_dev_ns'
-            TEST_NAMESPACE = 'cart_test_ns'
-            STAGE_NAMESPACE = 'cart_stage_ns'
-            PROD_NAMESPACE = 'cart_prod_ns'
+            DEV_NAMESPACE = 'cart-dev-ns'
+            TEST_NAMESPACE = 'cart-test-ns'
+            STAGE_NAMESPACE = 'cart-stage-ns'
+            PROD_NAMESPACE = 'cart-prod-ns'
         }
 
         stages {
