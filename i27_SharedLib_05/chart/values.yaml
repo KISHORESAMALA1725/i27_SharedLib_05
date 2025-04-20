@@ -1,0 +1,7 @@
+fullname: i27-eureka
+replicas:
+  default: 1
+image:
+  name: dummy-name
+  tag: dummy-tag
+targetPort: 8761 # this will be overridden by the values.yaml file in the aplication environment folder

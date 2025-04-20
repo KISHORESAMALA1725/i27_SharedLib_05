@@ -1,0 +1,23 @@
+# Deployment file common for all microservices across all envs
+# the values will be share from application team, depending on the microservice and environment
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ .Values.fullname }}
+  labels:
+    app: {{ .Values.fullname }}
+spec:
+  replicas: {{ .Values.replicas.default }}
+  selector:
+    matchLabels:
+      app: {{ .Values.fullname }}
+  template:
+    metadata:
+      labels:
+        app: {{ .Values.fullname }}
+    spec:
+      imagePullSecrets:
+      - name: jfrog-registry
+      containers:
+      - name: {{ .Values.fullname }}
+        image: {{ .Values.image.name }}:{{ .Values.image.tag }}
