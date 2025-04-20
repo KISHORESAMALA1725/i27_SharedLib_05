@@ -1,4 +1,4 @@
-import src.com.i27academy.builds.Docker;
+import com.i27academy.builds.Docker;
 
 def call(Map pipelineParams) {
     Docker docker = new Docker(this)
