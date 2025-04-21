@@ -241,7 +241,7 @@ def imageValidation() {
     return {
         echo "Trying to pull the image"
         try {
-            sh "docker pull ${env.JFROG_DOCKER_REGISTRY}/${env.JFROG_DOCKER_REPO_NAME}/${env.APPLICATION_NAME}/${GIT_COMMIT}"
+            sh "docker pull ${env.JFROG_DOCKER_REGISTRY}/${env.JFROG_DOCKER_REPO_NAME}/${env.APPLICATION_NAME}:${GIT_COMMIT}"
             echo " Image pulled successfully"          
             }
         catch(Exception e) {
