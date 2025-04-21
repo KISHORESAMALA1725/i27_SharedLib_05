@@ -38,9 +38,15 @@ def call(Map pipelineParams) {
             POM_PACKAGING = readMavenPom().getPackaging()
 
             //DOCKER VM INFO
-            DOCKER_HUB = "docker.io/kishoresamala84"
-            DOCKER_CREDS = credentials('kishoresamala84_docker_creds')
-            DOCKER_VM = '34.21.68.255'
+            // DOCKER_HUB = "docker.io/kishoresamala84"
+            // DOCKER_CREDS = credentials('kishoresamala84_docker_creds')
+            // DOCKER_VM = '34.21.68.255'
+
+            // JFROG CREDS 
+
+            JFROG_DOCKER_REGISTRY = 'i27academy.jfrog.io'
+            JFROG_DOCKER_REPO_NAME = 'cart-docker'
+            JFROG_CREDS = credentials('JFROG_CREDS')
 
             //K8S DETAILS
             DEV_CLUSTER_NAME = "i27-cluster"
@@ -136,7 +142,7 @@ def call(Map pipelineParams) {
                 }
                 steps {
                     script {
-                        docker_image = "${env.DOCKER_HUB}/${env.APPLICATION_NAME}:${GIT_COMMIT}"
+                        docker_image = "${env.JFROG_DOCKER_REGISTRY}/${env.JFROG_DOCKER_REPO_NAME}/${env.APPLICATION_NAME}:${GIT_COMMIT}"
                         imageValidation().call()
                         k8s.auth_login("${env.DEV_CLUSTER_NAME}","${env.DEV_CLUSTER_ZONE}","${env.DEV_PROJECT_ID}")
                         // dockerDeploy('dev', "${env.DEV_HOST_PORT}", "${env.CONT_PORT}").call()
@@ -235,7 +241,7 @@ def imageValidation() {
     return {
         echo "Trying to pull the image"
         try {
-            sh "docker pull ${env.DOCKER_HUB}/${env.APPLICATION_NAME}/${GIT_COMMIT}"
+            sh "docker pull ${env.JFROG_DOCKER_REGISTRY}/${env.JFROG_DOCKER_REPO_NAME}/${env.APPLICATION_NAME}/${GIT_COMMIT}"
             echo " Image pulled successfully"          
             }
         catch(Exception e) {
@@ -250,9 +256,9 @@ def dockerBuildAndPush() {
     return {
             script {
                 sh "cp ${WORKSPACE}/target/i27-${env.APPLICATION_NAME}-${env.POM_VERSION}.${env.POM_PACKAGING} ./.cicd"
-                sh "docker build --no-cache --build-arg JAR_SOURCE=i27-${env.APPLICATION_NAME}-${env.POM_VERSION}.${env.POM_PACKAGING} -t ${env.DOCKER_HUB}/${env.APPLICATION_NAME}:${GIT_COMMIT} ./.cicd"
-                sh "docker login -u ${env.DOCKER_CREDS_USR} -p ${env.DOCKER_CREDS_PSW}"
-                sh "docker push ${env.DOCKER_HUB}/${env.APPLICATION_NAME}:${GIT_COMMIT}"
+                sh "docker build --no-cache --build-arg JAR_SOURCE=i27-${env.APPLICATION_NAME}-${env.POM_VERSION}.${env.POM_PACKAGING} -t ${env.JFROG_DOCKER_REGISTRY}/${env.JFROG_DOCKER_REPO_NAME}/${env.APPLICATION_NAME}.${GIT_COMMIT} ./.cicd"
+                sh "docker login -u ${env.JFROG_CREDS_USR} -p ${env.JFROG_CREDS_PSW} i27academy.jfrog.io"
+                sh "docker push ${env.JFROG_DOCKER_REGISTRY}/${env.JFROG_DOCKER_REPO_NAME}/${env.APPLICATION_NAME}:${GIT_COMMIT}"
             }         
     }
 }
@@ -270,6 +276,7 @@ def dockerDeploy(envDeploy, hostPort, contPort) {
                     echo "Caught Error: $err"
                 }
                 sh "sshpass -p '$PASSWORD' -v ssh -o StrictHostKeyChecking=no '$USERNAME'@'$DOCKER_VM' \"docker container run -dit -p $hostPort:$contPort --name ${env.APPLICATION_NAME}-$envDeploy ${env.DOCKER_HUB}/${env.APPLICATION_NAME}:${GIT_COMMIT}\""
+                                // THIS UPPER LINE CAN BE IGNORED FOR JFROG SINCE WE ARE NOT DEPLOYTING TO DOCKER REGISTRY ANY MORE //
             }
         }      
     }
